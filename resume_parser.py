@@ -2,7 +2,11 @@ import pdfplumber
 import re
 
 
-SKILLS = ["python","sql","excel","java","react","power bi","tableau"]
+skills_input = st.text_input(
+    "Enter required skills (comma separated)",
+    placeholder="Python, SQL, Excel, AWS"
+)
+
 
 
 def extract_text(path):
