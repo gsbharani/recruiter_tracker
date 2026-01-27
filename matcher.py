@@ -1,11 +1,10 @@
-def match_resume_to_jd(resume_skills, jd_skills):
-    matched = resume_skills & jd_skills
-    missing = jd_skills - resume_skills
+from sentence_transformers import SentenceTransformer, util
 
-    score = round((len(matched) / len(jd_skills)) * 100, 2) if jd_skills else 0
+model = SentenceTransformer("all-MiniLM-L6-v2")
 
-    return {
-        "score": score,
-        "matched": list(matched),
-        "missing": list(missing)
-    }
+def semantic_score(jd_text: str, resume_text: str) -> float:
+    jd_emb = model.encode(jd_text, convert_to_tensor=True)
+    resume_emb = model.encode(resume_text, convert_to_tensor=True)
+
+    similarity = util.cos_sim(jd_emb, resume_emb).item()
+    return round(similarity * 100, 2)
