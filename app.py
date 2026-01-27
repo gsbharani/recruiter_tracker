@@ -33,10 +33,25 @@ def parse_resume(file_path):
         "experience": None
     }
 
-def upload_resume(file, filename):
+def upload_resume(uploaded_file, filename):
     bucket = "resumes"
-    supabase.storage.from_(bucket).upload(filename, file.getvalue(), {"content-type": "application/pdf"})
-    return supabase.storage.from_(bucket).get_public_url(filename)
+    file_bytes = uploaded_file.read()  # Read file content as bytes
+
+    try:
+        supabase.storage.from_(bucket).upload(
+            path=filename,
+            file=file_bytes,
+            content_type="application/pdf",
+            upsert=True  # allows overwrite if same filename exists
+        )
+    except Exception as e:
+        st.error(f"Upload failed: {e}")
+        return None
+
+    # Return public URL
+    url_data = supabase.storage.from_(bucket).get_public_url(filename)
+    return url_data["publicUrl"]  # this returns the URL string
+
 
 def save_candidate(data):
     supabase.table("candidates").insert(data).execute()
