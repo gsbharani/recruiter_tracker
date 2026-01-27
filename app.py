@@ -41,7 +41,7 @@ def upload_resume(uploaded_file, filename):
         supabase.storage.from_(bucket).upload(
             path=filename,
             file=file_bytes,
-            content_type="application/pdf",
+            
             upsert=True  # allows overwrite if same filename exists
         )
     except Exception as e:
@@ -69,13 +69,15 @@ if uploaded and recruiter_id:
     resume_url = upload_resume(uploaded, uploaded.name)
 
     candidate = {
-        "name": uploaded.name.split(".")[0],
-        "email": parsed.get("email"),
-        "phone": parsed.get("phone"),
-        "experience": parsed.get("experience"),
-        "resume_url": resume_url,
-        "recruiter_id": recruiter_id
-    }
+    "name": uploaded.name.split(".")[0],
+    "email": parsed.get("email") or "",
+    "phone": parsed.get("phone") or "",
+    "experience": parsed.get("experience") or 0,  # integer fallback
+    "resume_url": resume_url or "",
+    "recruiter_id": recruiter_id
+}
+
+    
 
     save_candidate(candidate)
     st.success("Candidate uploaded & saved successfully 🎉")
