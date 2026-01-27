@@ -2,6 +2,7 @@ import streamlit as st
 import tempfile
 import re
 import os
+import uuid
 from supabase import create_client
 
 # ---------------- CONFIG ----------------
@@ -35,49 +36,56 @@ def parse_resume(file_path):
 
 def upload_resume(uploaded_file, filename):
     bucket = "resumes"
-    file_bytes = uploaded_file.read()  # Read file content as bytes
+    file_bytes = uploaded_file.read()
 
     try:
         supabase.storage.from_(bucket).upload(
             path=filename,
             file=file_bytes,
-            
-            upsert=True  # allows overwrite if same filename exists
+            upsert=True
         )
     except Exception as e:
         st.error(f"Upload failed: {e}")
         return None
 
-    # Return public URL
     url_data = supabase.storage.from_(bucket).get_public_url(filename)
-    return url_data["publicUrl"]  # this returns the URL string
-
+    return url_data["publicUrl"]
 
 def save_candidate(data):
     supabase.table("candidates").insert(data).execute()
 
 # ---------------- UI ----------------
-recruiter_id = st.text_input("Recruiter ID")
+recruiter_id = st.text_input("Recruiter ID (UUID)")
 uploaded = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
 
 if uploaded and recruiter_id:
+    # ✅ Validate UUID AFTER input
+    try:
+        recruiter_uuid = str(uuid.UUID(recruiter_id))
+    except ValueError:
+        st.error("Please enter a valid UUID (example: 550e8400-e29b-41d4-a716-446655440000)")
+        st.stop()
+
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
         tmp.write(uploaded.read())
         temp_path = tmp.name
 
     parsed = parse_resume(temp_path)
-    resume_url = upload_resume(uploaded, uploaded.name)
+
+    # Make filename unique
+    import time
+    filename = f"{recruiter_uuid}_{int(time.time())}_{uploaded.name}"
+
+    resume_url = upload_resume(uploaded, filename)
 
     candidate = {
-    "name": uploaded.name.split(".")[0],
-    "email": parsed.get("email") or "",
-    "phone": parsed.get("phone") or "",
-    "experience": parsed.get("experience") or 0,  # integer fallback
-    "resume_url": resume_url or "",
-    "recruiter_id": recruiter_id
-}
-
-    
+        "name": uploaded.name.split(".")[0],
+        "email": parsed.get("email") or "",
+        "phone": parsed.get("phone") or "",
+        "experience": parsed.get("experience") or 0,
+        "resume_url": resume_url or "",
+        "recruiter_id": recruiter_uuid
+    }
 
     save_candidate(candidate)
     st.success("Candidate uploaded & saved successfully 🎉")
