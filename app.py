@@ -109,4 +109,14 @@ if all_results.data:
         {"Resume": r["resume_name"], "Fit %": r["score"]}
         for r in all_results.data
     ])
+    
+df["shortlist"] = df["score"] >= 70
+shortlisted = df[df["shortlist"]]
+
+st.download_button(
+    "Download Shortlisted (CSV)",
+    shortlisted.to_csv(index=False),
+    file_name="shortlisted_resumes.csv"
+)
+
 
