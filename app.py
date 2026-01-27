@@ -1,6 +1,7 @@
 import streamlit as st
 import tempfile
 import uuid
+import pandas as pd
 
 from supabase_client import supabase
 from text_utils import extract_text
@@ -51,27 +52,38 @@ if "jd_text" not in st.session_state:
 # ---------------- Resume Upload ----------------
 st.header("Upload Resumes")
 
-resume_file = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
+resume_files = st.file_uploader("Upload Resume (PDF/DOCX)", type=["pdf","docx"], accept_multiple_files=True)
 
-if resume_file:
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
-        tmp.write(resume_file.read())
-        resume_text = extract_text(tmp.name)
+results = []
 
-    score = semantic_score(st.session_state["jd_text"], resume_text)
+if resume_files:
+    for resume_file in resume_files:
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            tmp.write(resume_file.read())
+            resume_text = extract_text(tmp.name)
 
-    supabase.table("candidates").insert({
-        "id": str(uuid.uuid4()),
-        "recruiter_id": st.session_state["recruiter_id"],
-        "resume_name": resume_file.name,
-        "score": score
-    }).execute()
+        score = semantic_score(resume_text, st.session_state["jd_text"])
+        results.append({
+            "resume_name": resume_file.name,
+            "score": score
+        })
 
-    st.success(f"Resume scored: {score}%")
+        # Save each resume to Supabase
+        supabase.table("candidates").insert({
+            "id": str(uuid.uuid4()),
+            "recruiter_id": st.session_state["recruiter_id"],
+            "resume_name": resume_file.name,
+            "score": score
+        }).execute()
+
+        st.success(f"Resume scored: {resume_file.name} → {score}%")
+
 
 # ---------------- Ranking ----------------
 st.header("📊 Ranked Candidates")
-
+ranked_results = sorted(results, key=lambda x: x["score"], reverse=True)
+df = pd.DataFrame(ranked_results)
+st.dataframe(df)
 results = supabase.table("candidates") \
     .select("*") \
     .eq("recruiter_id", st.session_state["recruiter_id"]) \
@@ -85,3 +97,16 @@ if results.data:
             "Fit %": r["score"]
         } for r in results.data
     ])
+
+all_results = supabase.table("candidates") \
+    .select("*") \
+    .eq("recruiter_id", st.session_state["recruiter_id"]) \
+    .order("score", desc=True) \
+    .execute()
+
+if all_results.data:
+    st.table([
+        {"Resume": r["resume_name"], "Fit %": r["score"]}
+        for r in all_results.data
+    ])
+
