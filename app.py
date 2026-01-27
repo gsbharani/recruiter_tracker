@@ -1,18 +1,20 @@
 import streamlit as st
 import tempfile
-import re
 import os
-import uuid
+import re
 from supabase import create_client
+from dotenv import load_dotenv
 
-# ---------------- CONFIG ----------------
+# ---------------- LOAD ENV ----------------
+load_dotenv()
+
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
-supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-st.set_page_config(page_title="Recruiter Tracker", layout="wide")
-st.title("Recruiter Hiring & Resume Tracker")
+st.set_page_config(page_title="Recruiter Tracker", layout="centered")
+st.title("📋 Recruiter Hiring Tracker")
 
 # ---------------- HELPERS ----------------
 def parse_resume(file_path):
@@ -22,70 +24,81 @@ def parse_resume(file_path):
         with pdfplumber.open(file_path) as pdf:
             for page in pdf.pages:
                 text += page.extract_text() or ""
-    except Exception:
+    except:
         pass
 
     email = re.findall(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", text)
     phone = re.findall(r"\+?\d[\d\s-]{8,}", text)
 
     return {
-        "email": email[0] if email else None,
-        "phone": phone[0] if phone else None,
-        "experience": None
+        "email": email[0] if email else "",
+        "phone": phone[0] if phone else ""
     }
+
 
 def upload_resume(uploaded_file, filename):
-    bucket = "resumes"
     file_bytes = uploaded_file.read()
+    bucket = "resumes"
 
-    try:
-        supabase.storage.from_(bucket).upload(
-            path=filename,
-            file=file_bytes,
-            upsert=True
-        )
-    except Exception as e:
-        st.error(f"Upload failed: {e}")
-        return None
+    supabase.storage.from_(bucket).upload(
+        path=filename,
+        file=file_bytes,
+        upsert=True
+    )
 
-    url_data = supabase.storage.from_(bucket).get_public_url(filename)
-    return url_data["publicUrl"]
+    return supabase.storage.from_(bucket).get_public_url(filename)["publicUrl"]
 
-def save_candidate(data):
-    supabase.table("candidates").insert(data).execute()
 
-# ---------------- UI ----------------
-recruiter_id = st.text_input("Recruiter ID (UUID)")
-uploaded = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
+# ---------------- SESSION ----------------
+if "recruiter_id" not in st.session_state:
+    st.session_state.recruiter_id = None
 
-if uploaded and recruiter_id:
-    # ✅ Validate UUID AFTER input
-    try:
-        recruiter_uuid = str(uuid.UUID(recruiter_id))
-    except ValueError:
-        st.error("Please enter a valid UUID (example: 550e8400-e29b-41d4-a716-446655440000)")
-        st.stop()
 
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
-        tmp.write(uploaded.read())
-        temp_path = tmp.name
+# ---------------- RECRUITER REGISTRATION ----------------
+if not st.session_state.recruiter_id:
+    st.subheader("👤 Recruiter Registration")
 
-    parsed = parse_resume(temp_path)
+    r_name = st.text_input("Name")
+    r_email = st.text_input("Email")
 
-    # Make filename unique
-    import time
-    filename = f"{recruiter_uuid}_{int(time.time())}_{uploaded.name}"
+    if st.button("Register"):
+        if not r_name:
+            st.error("Name required")
+        else:
+            res = supabase.table("recruiters").insert({
+                "name": r_name,
+                "email": r_email
+            }).execute()
 
-    resume_url = upload_resume(uploaded, filename)
+            st.session_state.recruiter_id = res.data[0]["id"]
+            st.success("Recruiter registered successfully 🎉")
+            st.rerun()
 
-    candidate = {
-        "name": uploaded.name.split(".")[0],
-        "email": parsed.get("email") or "",
-        "phone": parsed.get("phone") or "",
-        "experience": parsed.get("experience") or 0,
-        "resume_url": resume_url or "",
-        "recruiter_id": recruiter_uuid
-    }
 
-    save_candidate(candidate)
-    st.success("Candidate uploaded & saved successfully 🎉")
+# ---------------- CANDIDATE UPLOAD ----------------
+if st.session_state.recruiter_id:
+    st.divider()
+    st.subheader("📄 Add Candidate")
+
+    uploaded = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
+
+    if uploaded:
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            tmp.write(uploaded.read())
+            temp_path = tmp.name
+
+        parsed = parse_resume(temp_path)
+        resume_url = upload_resume(uploaded, uploaded.name)
+
+        candidate_name = uploaded.name.replace(".pdf", "")
+
+        if st.button("Save Candidate"):
+            supabase.table("candidates").insert({
+                "name": candidate_name,
+                "email": parsed["email"],
+                "phone": parsed["phone"],
+                "resume_url": resume_url,
+                "recruiter_id": st.session_state.recruiter_id
+            }).execute()
+
+            st.success("Candidate saved successfully ✅")
