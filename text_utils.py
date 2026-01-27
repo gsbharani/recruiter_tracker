@@ -15,3 +15,7 @@ def extract_skills(text):
         "streamlit", "postgres", "supabase"
     ]
     return {skill for skill in skills if skill in text}
+def clean_text(text: str) -> str:
+    text = text.lower()
+    text = re.sub(r"\s+", " ", text)
+    return text
