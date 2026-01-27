@@ -1,104 +1,51 @@
 import streamlit as st
 import tempfile
-import os
-import re
-from supabase import create_client
-from dotenv import load_dotenv
+import uuid
 
-# ---------------- LOAD ENV ----------------
-load_dotenv()
+from supabase_client import supabase
+from resume_utils import extract_text_from_pdf, extract_skills
+from matcher import match_resume_to_jd
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+st.set_page_config("Recruiter JD Matcher", layout="wide")
+st.title("📄 Resume ↔ JD Matcher")
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+# ---- Recruiter ----
+st.subheader("Recruiter")
+recruiter_id = st.text_input("Recruiter UUID")
 
-st.set_page_config(page_title="Recruiter Tracker", layout="centered")
-st.title("📋 Recruiter Hiring Tracker")
+# ---- JD Upload ----
+st.subheader("Upload Job Description (PDF)")
+jd_file = st.file_uploader("JD PDF", type=["pdf"], key="jd")
 
-# ---------------- HELPERS ----------------
-def parse_resume(file_path):
-    text = ""
-    try:
-        import pdfplumber
-        with pdfplumber.open(file_path) as pdf:
-            for page in pdf.pages:
-                text += page.extract_text() or ""
-    except:
-        pass
+if jd_file:
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        tmp.write(jd_file.read())
+        jd_text = extract_text_from_pdf(tmp.name)
+        jd_skills = extract_skills(jd_text)
 
-    email = re.findall(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", text)
-    phone = re.findall(r"\+?\d[\d\s-]{8,}", text)
+    st.success(f"JD Skills: {', '.join(jd_skills)}")
 
-    return {
-        "email": email[0] if email else "",
-        "phone": phone[0] if phone else ""
-    }
+# ---- Resume Upload ----
+st.subheader("Upload Resume")
+resume_file = st.file_uploader("Resume PDF", type=["pdf"], key="resume")
 
+if resume_file and jd_file and recruiter_id:
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        tmp.write(resume_file.read())
+        resume_text = extract_text_from_pdf(tmp.name)
+        resume_skills = extract_skills(resume_text)
 
-def upload_resume(uploaded_file, filename):
-    file_bytes = uploaded_file.read()
-    bucket = "resumes"
+    result = match_resume_to_jd(resume_skills, jd_skills)
 
-    supabase.storage.from_(bucket).upload(
-        path=filename,
-        file=file_bytes,
-        upsert=True
-    )
+    supabase.table("candidates").insert({
+        "id": str(uuid.uuid4()),
+        "recruiter_id": recruiter_id,
+        "resume_url": resume_file.name,
+        "score": result["score"],
+        "matched_skills": result["matched"],
+        "missing_skills": result["missing"]
+    }).execute()
 
-    return supabase.storage.from_(bucket).get_public_url(filename)["publicUrl"]
-
-
-# ---------------- SESSION ----------------
-if "recruiter_id" not in st.session_state:
-    st.session_state.recruiter_id = None
-
-
-# ---------------- RECRUITER REGISTRATION ----------------
-if not st.session_state.recruiter_id:
-    st.subheader("👤 Recruiter Registration")
-
-    r_name = st.text_input("Name")
-    r_email = st.text_input("Email")
-
-    if st.button("Register"):
-        if not r_name:
-            st.error("Name required")
-        else:
-            res = supabase.table("recruiters").insert({
-                "name": r_name,
-                "email": r_email
-            }).execute()
-
-            st.session_state.recruiter_id = res.data[0]["id"]
-            st.success("Recruiter registered successfully 🎉")
-            st.rerun()
-
-
-# ---------------- CANDIDATE UPLOAD ----------------
-if st.session_state.recruiter_id:
-    st.divider()
-    st.subheader("📄 Add Candidate")
-
-    uploaded = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
-
-    if uploaded:
-        with tempfile.NamedTemporaryFile(delete=False) as tmp:
-            tmp.write(uploaded.read())
-            temp_path = tmp.name
-
-        parsed = parse_resume(temp_path)
-        resume_url = upload_resume(uploaded, uploaded.name)
-
-        candidate_name = uploaded.name.replace(".pdf", "")
-
-        if st.button("Save Candidate"):
-            supabase.table("candidates").insert({
-                "name": candidate_name,
-                "email": parsed["email"],
-                "phone": parsed["phone"],
-                "resume_url": resume_url,
-                "recruiter_id": st.session_state.recruiter_id
-            }).execute()
-
-            st.success("Candidate saved successfully ✅")
+    st.success(f"Match Score: {result['score']}%")
+    st.write("✅ Matched Skills:", result["matched"])
+    st.write("❌ Missing Skills:", result["missing"])
