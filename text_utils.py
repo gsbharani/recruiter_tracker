@@ -1,12 +1,15 @@
 import re
 import pdfplumber
 
-def extract_text_from_pdf(path):
+def extract_text(pdf_path: str) -> str:
     text = ""
-    with pdfplumber.open(path) as pdf:
+    with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
-            text += page.extract_text() or ""
-    return text.lower()
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + " "
+
+    return clean_text(text)
 
 def extract_skills(text):
     skills = [
