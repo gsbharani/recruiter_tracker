@@ -94,10 +94,11 @@ if resume_files:
             "score": final_score,
             "skills": st.session_state.get("skills", [])
         }).execute()
-        st.write(f"""
-        JD Match: {jd_score}%
-        Skill Match: {skill_match}%
-        Final Score: {final_score}%
+        st.markdown(f"""
+        **📄 {resume_file.name}**
+        - 🧠 JD Match: **{jd_score}%**
+        - 🛠 Skill Match: **{skill_match}%**
+        - 🎯 Final Score: **{final_score}%**
         """)
 
         st.success(f"Resume scored: {resume_file.name} → {score}%")
