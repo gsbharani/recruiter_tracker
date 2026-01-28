@@ -8,7 +8,7 @@ from text_utils import extract_text
 from matcher import semantic_score
 
 st.set_page_config("Recruiter JD Matcher", layout="wide")
-st.title("🧠 Recruiter JD ↔ Resume Matcher")
+st.title("🧑‍💼✅ Find the Best-Fit Candidates for Your Job — Instantly")
 
 # ---------------- Recruiter ----------------
 st.header("Recruiter")
