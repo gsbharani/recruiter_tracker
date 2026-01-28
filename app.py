@@ -54,7 +54,7 @@ st.subheader("Required Skills")
 
 skills_input = st.text_input(
     "Enter skills (comma separated)",
-    placeholder="Python, SQL, Streamlit, NLP, AWS"
+    placeholder="Python, SQL, AWS"
 )
 
 if skills_input:
