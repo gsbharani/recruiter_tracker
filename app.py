@@ -101,7 +101,6 @@ if results.data:
 all_results = supabase.table("candidates") \
     .select("resume_name, score") \
     .eq("recruiter_id", st.session_state["recruiter_id"]) \
-    
     .execute()
 if not all_results.data:
     st.info("No candidates uploaded yet.")
@@ -109,7 +108,7 @@ if not all_results.data:
 
 df = pd.DataFrame(all_results.data)
     
-df["shortlist"] = df["Fit %"] >= 70
+df["shortlist"] = df["score"] >= 70
 shortlisted = df[df["shortlist"]]
 
 st.download_button(
