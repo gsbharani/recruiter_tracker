@@ -49,6 +49,19 @@ if jd_file:
 if "jd_text" not in st.session_state:
     st.stop()
 
+# ---------------- Skills ---------------
+st.subheader("Required Skills")
+
+skills_input = st.text_input(
+    "Enter skills (comma separated)",
+    placeholder="Python, SQL, Streamlit, NLP, AWS"
+)
+
+if skills_input:
+    skills = [s.strip().lower() for s in skills_input.split(",")]
+    st.session_state["skills"] = skills
+    st.success(f"Skills added: {', '.join(skills)}")
+
 # ---------------- Resume Upload ----------------
 st.header("Upload Resumes")
 
