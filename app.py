@@ -71,8 +71,14 @@ resume_files = st.file_uploader("Upload Resume (PDF/DOCX)", type=["pdf","docx"],
 
 results = []
 
+if "uploaded_resumes" not in st.session_state:
+    st.session_state["uploaded_resumes"] = set()
+
 if resume_files:
     for resume_file in resume_files:
+
+        if resume_file.name in st.session_state["uploaded_resumes"]:
+            continue 
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
             tmp.write(resume_file.read())
             resume_text = extract_text(tmp.name)
