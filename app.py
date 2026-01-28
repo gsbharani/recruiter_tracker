@@ -110,7 +110,7 @@ if all_results.data:
         for r in all_results.data
     ])
     
-df["shortlist"] = df["score"] >= 70
+df["shortlist"] = df["Fit %"] >= 70
 shortlisted = df[df["shortlist"]]
 
 st.download_button(
