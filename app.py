@@ -75,10 +75,13 @@ if resume_files:
             tmp.write(resume_file.read())
             resume_text = extract_text(tmp.name)
 
-        score = semantic_score(resume_text, st.session_state["jd_text"])
+        jd_score = semantic_score(resume_text, st.session_state["jd_text"])
+        skill_match = skill_score(resume_text, st.session_state.get("skills", []))
+        final_score = round((jd_score * 0.7) + (skill_match * 0.3), 2)
+        
         results.append({
             "resume_name": resume_file.name,
-            "score": score
+            "score": final_score
         })
 
         # Save each resume to Supabase
@@ -86,8 +89,14 @@ if resume_files:
             "id": str(uuid.uuid4()),
             "recruiter_id": st.session_state["recruiter_id"],
             "resume_name": resume_file.name,
-            "score": score
+            "score": final_score,
+            "skills": st.session_state.get("skills", [])
         }).execute()
+        st.write(f"""
+        JD Match: {jd_score}%
+        Skill Match: {skill_match}%
+        Final Score: {final_score}%
+        """)
 
         st.success(f"Resume scored: {resume_file.name} → {score}%")
 
