@@ -2,10 +2,11 @@ import streamlit as st
 import tempfile
 import uuid
 import pandas as pd
+from resume_parser import parse_resume
 
 from supabase_client import supabase
 from text_utils import extract_text
-from matcher import semantic_score
+
 from matcher import semantic_score, skill_score
 
 
@@ -82,8 +83,8 @@ if resume_files:
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
             tmp.write(resume_file.read())
             resume_text = extract_text(tmp.name)
-
-        jd_score = semantic_score(resume_text, st.session_state["jd_text"])
+        parsed = parse_resume_text(resume_text, st.session_state.get("skills", []))
+        jd_score = semantic_score(st.session_state["jd_text"], resume_text)
         skill_match = skill_score(resume_text, st.session_state.get("skills", []))
         final_score = round((jd_score * 0.7) + (skill_match * 0.3), 2)
         
@@ -97,8 +98,11 @@ if resume_files:
             "id": str(uuid.uuid4()),
             "recruiter_id": st.session_state["recruiter_id"],
             "resume_name": resume_file.name,
+            "email": parsed["email"],
+            "mobile": parsed["mobile"],
+            "experience": parsed["experience"],
             "score": final_score,
-            "skills": st.session_state.get("skills", [])
+            "skills": parsed["skills_found"]
         }).execute()
         st.session_state["uploaded_resumes"].add(resume_file.name)
         st.markdown(f"""
