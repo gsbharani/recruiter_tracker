@@ -101,7 +101,7 @@ if resume_files:
         - 🎯 Final Score: **{final_score}%**
         """)
 
-        st.success(f"Resume scored: {resume_file.name} → {score}%")
+        
 
 
 # ---------------- Ranking ----------------
