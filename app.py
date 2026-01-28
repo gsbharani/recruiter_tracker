@@ -100,6 +100,7 @@ if resume_files:
             "score": final_score,
             "skills": st.session_state.get("skills", [])
         }).execute()
+        st.session_state["uploaded_resumes"].add(resume_file.name)
         st.markdown(f"""
         **📄 {resume_file.name}**
         - 🧠 JD Match: **{jd_score}%**
