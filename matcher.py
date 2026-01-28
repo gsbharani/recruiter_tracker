@@ -9,12 +9,12 @@ def semantic_score(jd_text: str, resume_text: str) -> float:
     similarity = util.cos_sim(jd_emb, resume_emb).item()
     return round(similarity * 100, 2)
 
-def skill_score(resume_text, skills):
-    resume_text = resume_text.lower()
-    matched = sum(1 for skill in skills if skill in resume_text)
-
-    if not skills:
+def skill_score(resume_text: str, required_skills: list) -> int:
+    if not required_skills:
         return 0
 
-    return (matched / len(skills)) * 100
+    resume_text = resume_text.lower()
+    matched = sum(1 for skill in required_skills if skill in resume_text)
+
+    return int((matched / len(required_skills)) * 100)
 
