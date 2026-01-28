@@ -99,16 +99,15 @@ if results.data:
     ])
 
 all_results = supabase.table("candidates") \
-    .select("*") \
+    .select("resume_name, score") \
     .eq("recruiter_id", st.session_state["recruiter_id"]) \
-    .order("score", desc=True) \
+    
     .execute()
+if not all_results.data:
+    st.info("No candidates uploaded yet.")
+    st.stop()
 
-if all_results.data:
-    st.table([
-        {"Resume": r["resume_name"], "Fit %": r["score"]}
-        for r in all_results.data
-    ])
+df = pd.DataFrame(all_results.data)
     
 df["shortlist"] = df["Fit %"] >= 70
 shortlisted = df[df["shortlist"]]
