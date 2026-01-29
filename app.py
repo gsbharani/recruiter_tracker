@@ -83,7 +83,8 @@ if resume_files:
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
             tmp.write(resume_file.read())
             resume_text = extract_text(tmp.name)
-        parsed = parse_resume_text(resume_text, st.session_state.get("skills", []))
+        parsed = parse_resume(resume_text, st.session_state.get("skills", []))
+
         jd_score = semantic_score(st.session_state["jd_text"], resume_text)
         skill_match = skill_score(resume_text, st.session_state.get("skills", []))
         final_score = round((jd_score * 0.7) + (skill_match * 0.3), 2)
