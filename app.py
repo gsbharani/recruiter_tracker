@@ -88,7 +88,7 @@ if resume_files:
             "recruiter_id": st.session_state["recruiter_id"],
             "resume_name": resume_file.name,
             "email": parsed["email"],
-            "mobile": parsed["mobile"],
+            "phone": parsed["phone"],
             "experience": parsed["experience"],
             "score": final_score,
             "skills": parsed["skills_found"]
