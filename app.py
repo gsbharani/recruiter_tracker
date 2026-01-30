@@ -93,12 +93,13 @@ if jd_file:
     st.success("JD uploaded, skills extracted, and saved ✅")
 
 # ---------------- Skills ----------------
-st.subheader("🛠 Required Skills")
-skills_input = st.text_input(
-    "Enter skills (comma separated)",
-    value=", ".join(st.session_state["skills"]),
-    placeholder="Python, SQL, AWS"
-)
+if st.session_state.get("jd_text"):
+    st.subheader("Required Skills")
+    skills_input = st.text_input(
+        "Enter skills (comma separated)",
+        value=", ".join(st.session_state["skills"]),
+        placeholder="Python, SQL, AWS"
+    )
 
 if skills_input:
     st.session_state["skills"] = [s.strip().lower() for s in skills_input.split(",")]
