@@ -53,25 +53,7 @@ if selected_jd != "Create New JD":
     st.session_state["skills"] = jd["skills"]
     st.session_state["jd_id"] = jd["id"]
     st.success("Old JD loaded")
-    
-from jd_skill_extractor import extract_skills_from_jd
 
-if jd_file:
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
-        tmp.write(jd_file.read())
-        jd_text = extract_text(tmp.name)
-
-    # ✅ auto extract skills ONLY AFTER jd_text exists
-    auto_skills = extract_skills_from_jd(jd_text)
-
-    # store in session
-    st.session_state["jd_text"] = jd_text
-    st.session_state["skills"] = auto_skills
-
-    st.info(
-        "💡 Suggested keywords from JD (editable): " +
-        ", ".join(auto_skills)
-    )
 
 
 
@@ -107,10 +89,15 @@ if skills_input:
 st.header("Job Description")
 jd_file = st.file_uploader("Upload JD (PDF)", type=["pdf"])
 
+from jd_skill_extractor import extract_skills_from_jd
+
 if jd_file:
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
         tmp.write(jd_file.read())
         jd_text = extract_text(tmp.name)
+
+    # ✅ extract skills AFTER jd_text exists
+    auto_skills = extract_skills_from_jd(jd_text)
 
     jd_id = str(uuid.uuid4())
 
@@ -119,17 +106,21 @@ if jd_file:
         "client_id": st.session_state["recruiter_id"],
         "title": jd_file.name,
         "jd_text": jd_text,
-        "skills": st.session_state.get("skills", []),
+        "skills": auto_skills,
         "status": "active"
     }).execute()
 
     st.session_state["jd_text"] = jd_text
+    st.session_state["skills"] = auto_skills
     st.session_state["jd_id"] = jd_id
 
-    st.success("JD uploaded and saved")
+    st.info(
+        "💡 Suggested skills from JD (editable): " +
+        ", ".join(auto_skills)
+    )
 
-if "jd_text" not in st.session_state:
-    st.stop()
+    st.success("JD uploaded, skills extracted, and saved")
+
 
 # ---------------- Resume Upload ----------------
 st.header("Upload Resumes")
