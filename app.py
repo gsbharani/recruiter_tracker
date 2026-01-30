@@ -54,7 +54,7 @@ if selected_jd != "Create New JD":
 
 # ---------------- JD Upload ----------------
 st.header("Upload New JD")
-jd_file = st.file_uploader("Upload JD (PDF/DOCX)", type=["pdf","docx"],accept_multiple_files=True)
+jd_file = st.file_uploader("Upload JD (PDF/DOCX)", type=["pdf","docx"])
 
 if jd_file and not st.session_state.get("jd_id"):
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
