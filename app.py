@@ -3,6 +3,7 @@ import tempfile
 import uuid
 import pandas as pd
 
+from pathlib import Path
 from resume_parser import parse_resume
 from text_utils import extract_text
 from matcher import semantic_score, skill_score
@@ -57,11 +58,15 @@ st.header("Upload New JD")
 jd_file = st.file_uploader("Upload JD (PDF/DOCX)", type=["pdf","docx"])
 
 if jd_file and not st.session_state.get("jd_id"):
+    ext = Path(jd_file.name).suffix.lower()
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
         tmp.write(jd_file.read())
-        jd_text = extract_text(tmp.name)
-
+        tmp.flush()
+        file_path = tmp.name
+    
+    jd_text = extract_text(file_path)  # now works for PDF & DOCX
     auto_skills = extract_skills_from_jd(jd_text)
+    
     jd_id = str(uuid.uuid4())
 
     supabase.table("job_requirements").insert({
