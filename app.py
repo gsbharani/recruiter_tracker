@@ -13,7 +13,7 @@ from jd_skill_extractor import extract_skills_from_jd
 
 # ---------------- Page Config ----------------
 st.set_page_config("Talent Fit Analyzer", layout="wide")
-st.title("🧑‍💼✅ Talent Fit Analyzer - Instantly Find the Best Candidates")
+st.markdown("🧑‍💼✅ Talent Fit Analyzer -  <br> Instantly Find the Best Candidates", unsafe_allow_html=True)
 
 # ---------------- Initialize Session State ----------------
 for key in ["recruiter_id", "jd_id", "jd_text", "skills", "uploaded_resumes"]:
