@@ -101,15 +101,18 @@ if st.session_state.get("jd_text"):
         placeholder="Python, SQL, AWS"
     )
 
-if skills_input:
-    st.session_state["skills"] = [s.strip().lower() for s in skills_input.split(",")]
-    # Update skills in DB if JD already exists
-    if st.session_state["jd_id"]:
-        supabase.table("job_requirements") \
-            .update({"skills": st.session_state["skills"]}) \
-            .eq("id", st.session_state["jd_id"]) \
-            .execute()
-    st.success("Skills saved ✅")
+    if skills_input:
+        st.session_state["skills"] = [
+            s.strip().lower() for s in skills_input.split(",")
+        ]
+
+        if st.session_state["jd_id"]:
+            supabase.table("job_requirements") \
+                .update({"skills": st.session_state["skills"]}) \
+                .eq("id", st.session_state["jd_id"]) \
+                .execute()
+
+        st.success("Skills saved ✅")
 
 # ---------------- Resume Upload ----------------
 st.header("📂 Upload Resumes")
