@@ -1,16 +1,28 @@
 import re
 import pdfplumber
+import docx
+from pathlib import Path
 import streamlit as st
 
 # ---------------- Text extraction ----------------
-def extract_text(pdf_path: str) -> str:
+def extract_text(file_path):
+    ext = Path(file_path).suffix.lower()
     text = ""
-    with pdfplumber.open(pdf_path) as pdf:
-        for page in pdf.pages:
-            page_text = page.extract_text()
-            if page_text:
-                text += page_text + " "
-    return clean_text(text)
+
+    if ext == ".pdf":
+        with pdfplumber.open(file_path) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+    elif ext == ".docx":
+        doc = docx.Document(file_path)
+        for para in doc.paragraphs:
+            text += para.text + "\n"
+    else:
+        raise ValueError("Unsupported file type: " + ext)
+
+    return clean_text(text)  # <-- call the function on the text
 
 def clean_text(text: str) -> str:
     text = text.lower()
@@ -33,21 +45,3 @@ def match_skills(resume_text: str, required_skills: list) -> tuple[list, list]:
             missing.append(skill)
 
     return matched, missing
-
-# ---------------- Streamlit UI ----------------
-skills_input = st.text_input(
-    "Enter required skills (comma separated)",
-    placeholder="Python, SQL, Excel, AWS"
-)
-
-if skills_input:
-    required_skills = [s.strip() for s in skills_input.split(",") if s.strip()]
-    
-    # Suppose resume_text is already extracted
-    # resume_text = extract_text(uploaded_resume_path)
-    # For demo:
-    resume_text = "Python, SQL, data analysis, excel"
-    
-    matched, missing = match_skills(resume_text, required_skills)
-    st.success(f"✅ Matched Skills: {matched}")
-    st.error(f"❌ Missing Skills: {missing}")
