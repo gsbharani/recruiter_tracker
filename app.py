@@ -91,15 +91,16 @@ if jd_file:
     st.session_state["jd_id"] = jd_id
 
     st.info("💡 Suggested skills from JD (editable): " + ", ".join(auto_skills))
-    st.success("JD uploaded, skills extracted, and saved ✅")
+    st.success("JD uploaded, 🎯skills extracted, and saved ✅")
 
 # ---------------- Skills ----------------
 if st.session_state.get("jd_text"):
-    st.subheader("Required Skills")
+    st.subheader("🎯 Skills detected from JD")
+    st.caption("Auto-extracted from the job description. Edit only if needed.")
     skills_input = st.text_input(
-        "Enter skills (comma separated)",
-        value=", ".join(st.session_state["skills"]),
-        placeholder="Python, SQL, AWS"
+        label="",
+    value=", ".join(st.session_state["skills"]),
+    placeholder="Add or remove skills if required"
     )
 
     if skills_input:
