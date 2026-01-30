@@ -9,21 +9,14 @@ from matcher import semantic_score, skill_score
 from supabase_client import supabase
 from jd_skill_extractor import extract_skills_from_jd
 
+# ---------------- Page Config ----------------
 st.set_page_config("Talent Fit Analyzer", layout="wide")
 st.title("🧑‍💼✅ Talent Fit Analyzer - Instantly Find the Best Candidates")
 
-
 # ---------------- Initialize Session State ----------------
-if "recruiter_id" not in st.session_state:
-    st.session_state["recruiter_id"] = None
-if "jd_id" not in st.session_state:
-    st.session_state["jd_id"] = None
-if "jd_text" not in st.session_state:
-    st.session_state["jd_text"] = None
-if "skills" not in st.session_state:
-    st.session_state["skills"] = []
-if "uploaded_resumes" not in st.session_state:
-    st.session_state["uploaded_resumes"] = set()
+for key in ["recruiter_id", "jd_id", "jd_text", "skills", "uploaded_resumes"]:
+    if key not in st.session_state:
+        st.session_state[key] = None if key != "skills" and key != "uploaded_resumes" else ([] if key=="skills" else set())
 
 # ---------------- Recruiter ----------------
 st.header("👤 Recruiter")
@@ -36,7 +29,6 @@ if st.button("Create / Load Recruiter"):
     else:
         recruiter = supabase.table("recruiters").insert({"name": recruiter_name}).execute()
         recruiter_id = recruiter.data[0]["id"]
-
     st.session_state["recruiter_id"] = recruiter_id
     st.success("Recruiter ready ✅")
 
@@ -45,18 +37,13 @@ if not st.session_state["recruiter_id"]:
 
 # ---------------- Load Existing JDs ----------------
 st.header("📄 Job Description")
-
 jds = supabase.table("job_requirements") \
     .select("id, title, jd_text, skills") \
     .eq("client_id", st.session_state["recruiter_id"]) \
     .execute()
 
 jd_map = {jd["title"]: jd for jd in jds.data} if jds.data else {}
-
-selected_jd = st.selectbox(
-    "Select JD",
-    ["Create New JD"] + list(jd_map.keys())
-)
+selected_jd = st.selectbox("Select JD", ["Create New JD"] + list(jd_map.keys()))
 
 if selected_jd != "Create New JD":
     jd = jd_map[selected_jd]
@@ -69,7 +56,7 @@ if selected_jd != "Create New JD":
 st.header("Upload New JD")
 jd_file = st.file_uploader("Upload JD (PDF)", type=["pdf"])
 
-if jd_file:
+if jd_file and not st.session_state.get("jd_id"):
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
         tmp.write(jd_file.read())
         jd_text = extract_text(tmp.name)
@@ -99,22 +86,20 @@ if st.session_state.get("jd_text"):
     st.caption("Auto-extracted from the job description. Edit only if needed.")
     skills_input = st.text_input(
         label="",
-    value=", ".join(st.session_state["skills"]),
-    placeholder="Add or remove skills if required"
+        value=", ".join(st.session_state["skills"]),
+        placeholder="Add or remove skills if required"
     )
 
-    if skills_input:
-        st.session_state["skills"] = [
-            s.strip().lower() for s in skills_input.split(",")
-        ]
-
-        if st.session_state["jd_id"]:
-            supabase.table("job_requirements") \
-                .update({"skills": st.session_state["skills"]}) \
-                .eq("id", st.session_state["jd_id"]) \
-                .execute()
-
+    if st.button("Save Skills"):
+        st.session_state["skills"] = [s.strip().lower() for s in skills_input.split(",")]
+        supabase.table("job_requirements") \
+            .update({"skills": st.session_state["skills"]}) \
+            .eq("id", st.session_state["jd_id"]) \
+            .execute()
         st.success("Skills saved ✅")
+
+def normalize_skills(skills):
+    return set(s.strip().lower() for s in skills if s)
 
 # ---------------- Resume Upload ----------------
 st.header("📂 Upload Resumes")
@@ -126,9 +111,18 @@ resume_files = st.file_uploader(
 
 if resume_files and st.session_state["jd_id"]:
     for resume_file in resume_files:
-        if resume_file.name in st.session_state["uploaded_resumes"]:
+        # ---- Duplicate check first ----
+        existing = supabase.table("candidates") \
+            .select("id") \
+            .eq("jd_id", st.session_state["jd_id"]) \
+            .eq("resume_name", resume_file.name) \
+            .execute()
+
+        if existing.data:
+            st.warning(f"⚠️ {resume_file.name} already uploaded for this JD")
             continue
 
+        # ---- Parse resume and calculate scores ----
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
             tmp.write(resume_file.read())
             resume_path = tmp.name
@@ -140,6 +134,11 @@ if resume_files and st.session_state["jd_id"]:
         skill_match = skill_score(resume_text, st.session_state.get("skills", []))
         final_score = round((jd_score * 0.7) + (skill_match * 0.3), 2)
 
+        jd_skills = normalize_skills(st.session_state["skills"])
+        candidate_skills = normalize_skills(parsed["skills_found"])
+        matched_skills = list(jd_skills & candidate_skills)
+        missing_skills = list(jd_skills - candidate_skills)
+
         supabase.table("candidates").insert({
             "id": str(uuid.uuid4()),
             "recruiter_id": st.session_state["recruiter_id"],
@@ -149,21 +148,25 @@ if resume_files and st.session_state["jd_id"]:
             "phone": parsed["mobile"],
             "experience": parsed["experience"],
             "score": final_score,
-            "skills": parsed["skills_found"]
+            "skills": parsed["skills_found"],
+            "matched_skills": matched_skills,
+            "missing_skills": missing_skills
         }).execute()
 
         st.session_state["uploaded_resumes"].add(resume_file.name)
 
+        # ---- Display resume scoring ----
         st.markdown(f"""
         **📄 {resume_file.name}**
         - 🧠 JD Match: **{jd_score}%**
         - 🛠 Skill Match: **{skill_match}%**
         - 🎯 Final Score: **{final_score}%**
+        - ✅ Matched Skills ({len(matched_skills)}): {", ".join(matched_skills) or "None"}
+        - ❌ Missing Skills ({len(missing_skills)}): {", ".join(missing_skills) or "None"}
         """)
 
 # ---------------- Ranking ----------------
 st.header("📊 Ranked Candidates")
-
 if st.session_state["jd_id"]:
     db_results = supabase.table("candidates") \
         .select("resume_name, score") \
