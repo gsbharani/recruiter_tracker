@@ -1,9 +1,10 @@
 import streamlit as st
+from pathlib import Path
 import tempfile
 import uuid
 import pandas as pd
 
-from pathlib import Path
+
 from resume_parser import parse_resume
 from text_utils import extract_text
 from matcher import semantic_score, skill_score
@@ -59,7 +60,7 @@ jd_file = st.file_uploader("Upload JD (PDF/DOCX)", type=["pdf","docx"])
 
 if jd_file and not st.session_state.get("jd_id"):
     ext = Path(jd_file.name).suffix.lower()
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
         tmp.write(jd_file.read())
         tmp.flush()
         file_path = tmp.name
