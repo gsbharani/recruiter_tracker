@@ -4,6 +4,7 @@ import docx
 from pathlib import Path
 import streamlit as st
 
+
 # ---------------- Text extraction ----------------
 def extract_text(file_path):
     ext = Path(file_path).suffix.lower()
@@ -20,7 +21,7 @@ def extract_text(file_path):
         for para in doc.paragraphs:
             text += para.text + "\n"
     else:
-        raise ValueError("Unsupported file type: " + ext)
+        raise ValueError("Unsupported file type")
 
     return clean_text(text)  # <-- call the function on the text
 
