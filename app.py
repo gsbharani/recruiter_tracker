@@ -27,10 +27,12 @@ if st.button("Create / Load Recruiter"):
         recruiter_id = recruiter.data[0]["id"]
 
     st.session_state["recruiter_id"] = recruiter_id
-    st.success(f"Recruiter ready: {recruiter_id}")
+    st.success(f"Recruiter ready")
 
 if "recruiter_id" not in st.session_state:
     st.stop()
+
+# ---------------- Load Existing JDs ----------------
 st.subheader("Your Saved Job Descriptions")
 
 jds = supabase.table("job_requirements") \
@@ -47,12 +49,29 @@ selected_jd = st.selectbox(
 
 if selected_jd != "Create New JD":
     jd = jd_map[selected_jd]
-
     st.session_state["jd_text"] = jd["jd_text"]
     st.session_state["skills"] = jd["skills"]
     st.session_state["jd_id"] = jd["id"]
-
     st.success("Old JD loaded")
+
+# ---------------- Skills ----------------
+st.subheader("Required Skills")
+skills_input = st.text_input(
+    "Enter skills (comma separated)",
+    placeholder="Python, SQL, AWS"
+)
+
+if skills_input:
+    st.session_state["skills"] = [s.strip().lower() for s in skills_input.split(",")]
+
+    # Update skills in DB if JD already exists
+    if "jd_id" in st.session_state:
+        supabase.table("job_requirements") \
+            .update({"skills": st.session_state["skills"]}) \
+            .eq("id", st.session_state["jd_id"]) \
+            .execute()
+
+    st.success("Skills saved")
 
 # ---------------- JD Upload ----------------
 st.header("Job Description")
@@ -77,29 +96,19 @@ if jd_file:
     st.session_state["jd_text"] = jd_text
     st.session_state["jd_id"] = jd_id
 
-    st.success("JD saved and uploaded")
-
+    st.success("JD uploaded and saved")
 
 if "jd_text" not in st.session_state:
     st.stop()
 
-# ---------------- Skills ----------------
-st.subheader("Required Skills")
-skills_input = st.text_input("Enter skills (comma separated)", placeholder="Python, SQL, AWS")
-
-if skills_input:
-    st.session_state["skills"] = [s.strip().lower() for s in skills_input.split(",")]
-    st.success(f"Skills added: {skills_input}")
-
 # ---------------- Resume Upload ----------------
 st.header("Upload Resumes")
+
 resume_files = st.file_uploader(
     "Upload Resume (PDF/DOCX)",
     type=["pdf", "docx"],
     accept_multiple_files=True
 )
-
-results = []
 
 if "uploaded_resumes" not in st.session_state:
     st.session_state["uploaded_resumes"] = set()
@@ -123,6 +132,7 @@ if resume_files:
         supabase.table("candidates").insert({
             "id": str(uuid.uuid4()),
             "recruiter_id": st.session_state["recruiter_id"],
+            "jd_id": st.session_state["jd_id"],  # 🔥 important
             "resume_name": resume_file.name,
             "email": parsed["email"],
             "phone": parsed["mobile"],
@@ -132,11 +142,6 @@ if resume_files:
         }).execute()
 
         st.session_state["uploaded_resumes"].add(resume_file.name)
-
-        results.append({
-            "Resume": resume_file.name,
-            "Fit %": final_score
-        })
 
         st.markdown(f"""
         **📄 {resume_file.name}**
@@ -151,6 +156,7 @@ st.header("📊 Ranked Candidates")
 db_results = supabase.table("candidates") \
     .select("resume_name, score") \
     .eq("recruiter_id", st.session_state["recruiter_id"]) \
+    .eq("jd_id", st.session_state["jd_id"]) \
     .order("score", desc=True) \
     .execute()
 
