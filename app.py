@@ -53,6 +53,18 @@ if selected_jd != "Create New JD":
     st.session_state["skills"] = jd["skills"]
     st.session_state["jd_id"] = jd["id"]
     st.success("Old JD loaded")
+    
+from jd_skill_extractor import extract_skills_from_jd
+
+auto_skills = extract_skills_from_jd(jd_text)
+
+st.session_state["skills"] = auto_skills
+
+st.info(
+    "💡 Suggested skills (editable): " +
+    ", ".join(auto_skills)
+)
+
 
 # ---------------- Skills ----------------
 st.subheader("Required Skills")
