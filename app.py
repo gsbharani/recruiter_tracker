@@ -9,8 +9,8 @@ from matcher import semantic_score, skill_score
 from supabase_client import supabase
 from jd_skill_extractor import extract_skills_from_jd
 
-st.set_page_config("Recruiter JD Matcher", layout="wide")
-st.title("🧑‍💼✅ Find the Best-Fit Candidates for Your Job — Instantly")
+st.set_page_config("Talent Fit Analyzer", layout="wide")
+st.title("🧑‍💼✅ Talent Fit Analyzer — Instantly Find the Best Candidates")
 
 # ---------------- Initialize Session State ----------------
 if "recruiter_id" not in st.session_state:
@@ -25,7 +25,7 @@ if "uploaded_resumes" not in st.session_state:
     st.session_state["uploaded_resumes"] = set()
 
 # ---------------- Recruiter ----------------
-st.header("Recruiter")
+st.header("👤 Recruiter")
 recruiter_name = st.text_input("Your Name")
 
 if st.button("Create / Load Recruiter"):
@@ -43,7 +43,8 @@ if not st.session_state["recruiter_id"]:
     st.stop()
 
 # ---------------- Load Existing JDs ----------------
-st.subheader("Your Saved Job Descriptions")
+st.header("📄 Job Description")
+
 jds = supabase.table("job_requirements") \
     .select("id, title, jd_text, skills") \
     .eq("client_id", st.session_state["recruiter_id"]) \
@@ -61,7 +62,7 @@ if selected_jd != "Create New JD":
     st.session_state["jd_text"] = jd["jd_text"]
     st.session_state["skills"] = jd["skills"]
     st.session_state["jd_id"] = jd["id"]
-    st.success("Old JD loaded ✅")
+    st.success(f"Loaded JD: {selected_jd} ✅")
 
 # ---------------- JD Upload ----------------
 st.header("Upload New JD")
@@ -92,7 +93,7 @@ if jd_file:
     st.success("JD uploaded, skills extracted, and saved ✅")
 
 # ---------------- Skills ----------------
-st.subheader("Required Skills")
+st.subheader("🛠 Required Skills")
 skills_input = st.text_input(
     "Enter skills (comma separated)",
     value=", ".join(st.session_state["skills"]),
@@ -110,7 +111,7 @@ if skills_input:
     st.success("Skills saved ✅")
 
 # ---------------- Resume Upload ----------------
-st.header("Upload Resumes")
+st.header("📂 Upload Resumes")
 resume_files = st.file_uploader(
     "Upload Resume (PDF/DOCX)",
     type=["pdf", "docx"],
