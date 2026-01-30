@@ -10,7 +10,7 @@ from supabase_client import supabase
 from jd_skill_extractor import extract_skills_from_jd
 
 st.set_page_config("Talent Fit Analyzer", layout="wide")
-st.title("🧑‍💼 Talent Fit Analyzer")
+st.title("🧑‍💼✅ Talent Fit Analyzer")
 st.caption("Instantly find the best candidates")
 
 # ---------------- Initialize Session State ----------------
