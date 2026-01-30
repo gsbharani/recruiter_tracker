@@ -21,7 +21,7 @@ def extract_text(file_path):
         for para in doc.paragraphs:
             text += para.text + "\n"
     else:
-        raise ValueError("Unsupported file type")
+        raise ValueError("Unsupported file type: " + ext")
 
     return clean_text(text)  # <-- call the function on the text
 
