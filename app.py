@@ -58,14 +58,6 @@ if selected_jd != "Create New JD":
 
 
 
-st.session_state["skills"] = auto_skills
-
-st.info(
-    "💡 Suggested skills (editable): " +
-    ", ".join(auto_skills)
-)
-
-
 # ---------------- Skills ----------------
 st.subheader("Required Skills")
 skills_input = st.text_input(
