@@ -4,7 +4,7 @@ from collections import Counter
 STOPWORDS = {
     "and", "or", "the", "to", "of", "in", "for", "with", "on",
     "a", "an", "is", "are", "will", "be", "as", "by", "from",
-    "years", "experience", "knowledge", "skills", "ability"
+    "years", "experience", "knowledge", "skills", "ability", "you"
 }
 
 def extract_skills_from_jd(jd_text, top_n=15):
