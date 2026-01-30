@@ -56,7 +56,25 @@ if selected_jd != "Create New JD":
     
 from jd_skill_extractor import extract_skills_from_jd
 
-auto_skills = extract_skills_from_jd(jd_text)
+if jd_file:
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        tmp.write(jd_file.read())
+        jd_text = extract_text(tmp.name)
+
+    # ✅ auto extract skills ONLY AFTER jd_text exists
+    auto_skills = extract_skills_from_jd(jd_text)
+
+    # store in session
+    st.session_state["jd_text"] = jd_text
+    st.session_state["skills"] = auto_skills
+
+    st.info(
+        "💡 Suggested keywords from JD (editable): " +
+        ", ".join(auto_skills)
+    )
+
+
+
 
 st.session_state["skills"] = auto_skills
 
