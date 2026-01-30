@@ -4,7 +4,6 @@ import tempfile
 import uuid
 import pandas as pd
 
-
 from resume_parser import parse_resume
 from text_utils import extract_text
 from matcher import semantic_score, skill_score
@@ -13,7 +12,7 @@ from jd_skill_extractor import extract_skills_from_jd
 
 # ---------------- Page Config ----------------
 st.set_page_config("Talent Fit Analyzer", layout="wide")
-st.title("🧑‍💼✅ Talent Fit Analyzer -  <br>         Instantly Find the Best Candidates", unsafe_allow_html=True)
+st.title("🧑‍💼✅ Talent Fit Analyzer - Instantly Find the Best Candidates", unsafe_allow_html=True)
 
 # ---------------- Initialize Session State ----------------
 for key in ["recruiter_id", "jd_id", "jd_text", "skills", "uploaded_resumes"]:
@@ -95,7 +94,6 @@ if st.session_state.get("jd_text"):
         value=", ".join(st.session_state["skills"]),
         placeholder="Add or remove skills if required"
     )
-
     if st.button("Save Skills"):
         st.session_state["skills"] = [s.strip().lower() for s in skills_input.split(",")]
         supabase.table("job_requirements") \
