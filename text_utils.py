@@ -1,11 +1,13 @@
-import re
 import pdfplumber
 import docx
 from pathlib import Path
-import streamlit as st
+import re
 
+def clean_text(text: str) -> str:
+    text = text.lower()
+    text = re.sub(r"\s+", " ", text)
+    return text
 
-# ---------------- Text extraction ----------------
 def extract_text(file_path):
     ext = Path(file_path).suffix.lower()
     text = ""
@@ -21,14 +23,10 @@ def extract_text(file_path):
         for para in doc.paragraphs:
             text += para.text + "\n"
     else:
-        raise ValueError("Unsupported file type: " + ext")
+        raise ValueError("Unsupported file type: " + ext)
 
-    return clean_text(text)  # <-- call the function on the text
+    return clean_text(text)
 
-def clean_text(text: str) -> str:
-    text = text.lower()
-    text = re.sub(r"\s+", " ", text)
-    return text
 
 # ---------------- Skill Matching ----------------
 def match_skills(resume_text: str, required_skills: list) -> tuple[list, list]:
