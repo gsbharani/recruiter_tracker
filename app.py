@@ -31,6 +31,28 @@ if st.button("Create / Load Recruiter"):
 
 if "recruiter_id" not in st.session_state:
     st.stop()
+st.subheader("Your Saved Job Descriptions")
+
+jds = supabase.table("job_requirements") \
+    .select("id, title, jd_text, skills") \
+    .eq("client_id", st.session_state["recruiter_id"]) \
+    .execute()
+
+jd_map = {jd["title"]: jd for jd in jds.data}
+
+selected_jd = st.selectbox(
+    "Select JD",
+    ["Create New JD"] + list(jd_map.keys())
+)
+
+if selected_jd != "Create New JD":
+    jd = jd_map[selected_jd]
+
+    st.session_state["jd_text"] = jd["jd_text"]
+    st.session_state["skills"] = jd["skills"]
+    st.session_state["jd_id"] = jd["id"]
+
+    st.success("Old JD loaded")
 
 # ---------------- JD Upload ----------------
 st.header("Job Description")
