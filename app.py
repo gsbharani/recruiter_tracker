@@ -11,7 +11,7 @@ from jd_skill_extractor import extract_skills_from_jd
 
 st.set_page_config("Talent Fit Analyzer", layout="wide")
 st.title("🧑‍💼✅ Talent Fit Analyzer")
-st.caption("Instantly find the best candidates")
+st.title("Instantly Find the Best Candidates")
 
 # ---------------- Initialize Session State ----------------
 if "recruiter_id" not in st.session_state:
