@@ -39,9 +39,24 @@ jd_file = st.file_uploader("Upload JD (PDF)", type=["pdf"])
 if jd_file:
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
         tmp.write(jd_file.read())
-        st.session_state["jd_text"] = extract_text(tmp.name)
+        jd_text = extract_text(tmp.name)
 
-    st.success("JD uploaded")
+    jd_id = str(uuid.uuid4())
+
+    supabase.table("job_requirements").insert({
+        "id": jd_id,
+        "client_id": st.session_state["recruiter_id"],
+        "title": jd_file.name,
+        "jd_text": jd_text,
+        "skills": st.session_state.get("skills", []),
+        "status": "active"
+    }).execute()
+
+    st.session_state["jd_text"] = jd_text
+    st.session_state["jd_id"] = jd_id
+
+    st.success("JD saved and uploaded")
+
 
 if "jd_text" not in st.session_state:
     st.stop()
