@@ -129,8 +129,10 @@ if resume_files and st.session_state["jd_id"]:
             continue
 
         # ---- Parse resume and calculate scores ----
-        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        ext = Path(resume_file.name).suffix.lower()
+        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
             tmp.write(resume_file.read())
+            tmp.flush()
             resume_path = tmp.name
 
         resume_text = extract_text(resume_path)
